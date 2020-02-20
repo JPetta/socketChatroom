@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <title>Document</title>
+</head>
+<body>
+    <div id="app">
+        <div v-if="onDisplay==='chatroom'" id="chatroom" class="container">
+            <h1 @click="showUsers">Hi {{user}}</h1>
+            <div class="row">
+                <div class="col-4">
+                    Users Online : 
+                    <table class="table table-hover">
+                        <tbody>
+                          <tr v-for="user in userslogged">
+                            <td>{{user}}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                </div>
+
+                <div class="col-8">
+                    <div class="row">
+                        <textarea v-model="message" name="" id="" cols="20" rows="1"></textarea>
+                        <button @click="sendMessage" class="btn btn-dark ml-3">Send</button>
+                        <div class="col-12">
+                            <p v-for="message in messages">{{message.user}} - {{message.message}}</p>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div v-if="onDisplay==='login'" class="container">
+            <div class="row">
+                <div class="col-12 d-flex justify-content-center pt-5">
+                    <form>
+                        <div class="form-group">
+                          <label for="exampleInputEmail1">Username</label>
+                          <input v-model="user" type="test" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Username">
+                          <select class="selectpicker"  ref="select" v-model="chatroom">
+                            <option selected>Chat room</option >
+                            <option value="one">One</option>
+                            <option value="two">Two</option>
+                            <option value="three">Three</option>
+                          </select>
+                        </div>
+                        <button @click.prevent="login" type="submit" class="btn btn-primary">Submit</button>
+                      </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                roomName: '',
+                onDisplay : 'login',
+                user : '',
+                message : '',
+                chatroom : '',
+                userslogged : [],
+                messages : [],
+                socket: null
+            },
+            methods : {
+                login(){
+                    this.socket = io(`http://localhost:3000/${this.chatroom}`);
+                    let socket = this.socket
+                    this.onDisplay = 'chatroom'
+                    socket.emit('login', this.user)
+                    socket.on('newUser',(users)=>{
+                        console.log('terima emit new user')
+                        this.userslogged=[]
+                        users.forEach(user => {
+                            this.userslogged.push(user)
+                        });
+                        console.log(this.userslogged)
+                    }) 
+                    socket.on('newMessage', (messages)=>{
+                        this.messages = []
+                        messages.forEach(message => {
+                            this.messages.push(message)
+                        });
+                    })
+                },
+                showUsers(){
+                    console.log(this.userslogged)
+                },
+                sendMessage(){
+                    console.log('masuk newMessage')
+                    console.log(this.user + this.message)
+                    this.socket.emit('sendMessage', {user : this.user, message : this.message})
+                    this.message=''
+                },
+                selectChatroom(value){
+                    this.chatroom = value
+                }
+            }
+        })
+    </script>
+</body>
+</html>
